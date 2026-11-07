@@ -12,9 +12,8 @@ login local
 end
 wr
 
---------------------------Aista--------------------------
+--------------------------Arista--------------------------
 zerotouch disable
-
 service routing protocols model multi-agent
 
 --------------------------ssh Aista--------------------------
@@ -26,25 +25,124 @@ no shutdown
 end
 write
 
-==========================R-Border-1==========================
+==========================R-Border-10==========================
 conf t
 hostname R-Border-1
+ip routing
 
-==========================R-Border-2==========================
+ip vrf management
+int fa0/0
+no shu
+int fa0/0.99
+encapsulation dot1Q 99
+ip vrf forwarding management
+ip add 172.16.99.1 255.255.255.0
+
+==========================R-Border-20==========================
 conf t
 hostname R-Border-2
+ip routing
 
-==========================R-Border-3==========================
+ip vrf management
+int fa0/0
+no shu
+int fa0/0.88
+encapsulation dot1Q 88
+ip vrf forwarding management
+ip add 172.16.88.1 255.255.255.0
+
+==========================R-Border-30==========================
 conf t
 hostname R-Border-3
+
+==========================Cisco-ISP==========================
+conf t
+hostname Cisco-ISP
 
 ==========================Spin-10==========================
 conf t
 hostname Spin-10
+ip routing
+ip vrf management
+
+vlan 99
+name RED-OOB-GESTION-1
+
+vlan 88
+name RED-OOB-GESTION-2
+
+spanning-tree mode rapid-pvst
+spanning-tree vlan 99 priority 4096
+spanning-tree vlan 88 priority 8192
+
+int Vlan99
+ip vrf forwarding management
+ip address 172.16.99.10 255.255.255.0
+no shu
+
+int Vlan88
+ip vrf forwarding management
+ip add 172.16.88.10 255.255.255.0
+no shu
+
+int range gi0/0 - 3
+switchport tr encapsulation dot1q
+switchport mode tr
+no shu
+
+ip sla 1
+icmp-echo 172.16.99.1 source-interface Vlan99
+vrf management
+frequency 5
+ip sla schedule 1 life forever start-time now
+track 1 ip sla 1 reachability
+
+ip route vrf management 0.0.0.0 0.0.0.0 172.16.99.1 track 1
+ip route vrf management 0.0.0.0 0.0.0.0 172.16.88.1 5
+ip ssh version 2
 
 ==========================Spin-20==========================
 conf t
 hostname Spin-20
+
+ip routing
+ip vrf management
+
+vlan 99
+name RED-OOB-GESTION-1
+
+vlan 88
+name RED-OOB-GESTION-2
+
+spanning-tree mode rapid-pvst
+spanning-tree vlan 88 priority 4096
+spanning-tree vlan 99 priority 8192
+
+int Vlan99
+ip vrf forwarding management
+ip address 172.16.99.20 255.255.255.0
+no shu
+
+int Vlan88
+ip vrf forwarding management
+ip add 172.16.88.20 255.255.255.0
+no shu
+
+int range gi0/0 - 3
+switchport tr encapsulation dot1q
+switchport mode tr
+no shu
+
+ip sla 1
+icmp-echo 172.16.88.1 source-interface Vlan88
+vrf management
+frequency 5
+ip sla schedule 1 life forever start-time now
+track 1 ip sla 1 reachability
+
+ip route vrf management 0.0.0.0 0.0.0.0 172.16.88.1 track 1
+ip route vrf management 0.0.0.0 0.0.0.0 172.16.99.1 5
+ip ssh version 2
 
 ==========================Spin-30==========================
 conf t
@@ -64,4 +162,8 @@ hostname leave-13
 
 ==========================leave-15==========================
 conf t
-hostname leave-14
+hostname leave-15
+
+==========================leave-15==========================
+conf t
+hostname leave-16
