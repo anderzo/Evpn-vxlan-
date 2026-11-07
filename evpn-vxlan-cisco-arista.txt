@@ -1,0 +1,67 @@
+==========================SSH==========================
+
+--------------------------ssh cisco--------------------------
+conf t
+ip domain-name datacenter.local
+crypto key generate rsa modulus 2048
+ip ssh version 2
+username Anderzon privilege 15 secret Anderzon
+line vty 0 4
+transport input ssh
+login local
+end
+wr
+
+--------------------------Aista--------------------------
+zerotouch disable
+
+service routing protocols model multi-agent
+
+--------------------------ssh Aista--------------------------
+configure
+dns domain datacenter.local
+username Anderzon privilege 15 role network-admin secret Anderzon
+management ssh
+no shutdown
+end
+write
+
+==========================R-Border-1==========================
+conf t
+hostname R-Border-1
+
+==========================R-Border-2==========================
+conf t
+hostname R-Border-2
+
+==========================R-Border-3==========================
+conf t
+hostname R-Border-3
+
+==========================Spin-10==========================
+conf t
+hostname Spin-10
+
+==========================Spin-20==========================
+conf t
+hostname Spin-20
+
+==========================Spin-30==========================
+conf t
+hostname Spin-30
+
+==========================leave-11==========================
+conf t
+hostname leave-11
+
+==========================leave-12==========================
+conf t
+hostname leave-12
+
+==========================leave-13==========================
+conf t
+hostname leave-13
+
+==========================leave-15==========================
+conf t
+hostname leave-14
