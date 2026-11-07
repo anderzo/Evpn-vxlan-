@@ -27,7 +27,7 @@ write
 
 ==========================R-Border-10==========================
 conf t
-hostname R-Border-1
+hostname R-Border-10
 ip routing
 
 ip vrf management
@@ -40,7 +40,7 @@ ip add 172.16.99.1 255.255.255.0
 
 ==========================R-Border-20==========================
 conf t
-hostname R-Border-2
+hostname R-Border-20
 ip routing
 
 ip vrf management
@@ -53,7 +53,21 @@ ip add 172.16.88.1 255.255.255.0
 
 ==========================R-Border-30==========================
 conf t
-hostname R-Border-3
+hostname R-Border-30
+ip routing
+
+ip vrf management-2
+int fa0/0
+no shu
+
+int fa0/0.100
+encapsulation dot1Q 100
+ip vrf forwarding management-2
+ip address 172.16.100.1 255.255.255.0
+no shu
+
+end
+wr
 
 ==========================Cisco-ISP==========================
 conf t
@@ -101,6 +115,9 @@ ip route vrf management 0.0.0.0 0.0.0.0 172.16.99.1 track 1
 ip route vrf management 0.0.0.0 0.0.0.0 172.16.88.1 5
 ip ssh version 2
 
+end
+wr
+
 ==========================Spin-20==========================
 conf t
 hostname Spin-20
@@ -144,26 +161,186 @@ ip route vrf management 0.0.0.0 0.0.0.0 172.16.88.1 track 1
 ip route vrf management 0.0.0.0 0.0.0.0 172.16.99.1 5
 ip ssh version 2
 
-==========================Spin-30==========================
-conf t
-hostname Spin-30
+end
+wr
 
 ==========================leave-11==========================
 conf t
 hostname leave-11
 
+vlan 88,99
+spanning-tree mode rapid-pvst
+vrf instance management
+ip routing vrf management
+
+int Vlan99
+vrf management
+ip address 172.16.99.11/24
+exit
+
+int Vlan88
+vrf management
+ip address 172.16.88.11/24
+exit
+
+ip route vrf management 0.0.0.0/0 172.16.99.1
+ip route vrf management 0.0.0.0/0 172.16.88.1 5
+
+int Ethernet1-2
+switchport mode tr
+
+int Ethernet3
+switchport mode access
+switchport access vlan 99
+
+management ssh
+vrf management
+no shu
+
+end
+wr
+
 ==========================leave-12==========================
 conf t
 hostname leave-12
+
+vlan 88,99
+spanning-tree mode rapid-pvst
+vrf instance management
+ip routing vrf management
+
+int Vlan99
+vrf management
+ip address 172.16.99.12/24
+
+int Vlan88
+vrf management
+ip address 172.16.88.12/24
+exit
+
+ip route vrf management 0.0.0.0/0 172.16.99.1
+ip route vrf management 0.0.0.0/0 172.16.88.1 5
+
+int Ethernet1-2
+switchport mode tr
+
+management ssh
+vrf management
+no shu
+
+end
+wr
 
 ==========================leave-13==========================
 conf t
 hostname leave-13
 
+vlan 88,99
+spanning-tree mode rapid-pvst
+vrf instance management
+ip routing vrf management
+
+int Vlan99
+vrf management
+ip address 172.16.99.13/24
+ex
+
+int Vlan88
+vrf management
+ip address 172.16.88.13/24
+exit
+
+ip route vrf management 0.0.0.0/0 172.16.99.1
+ip route vrf management 0.0.0.0/0 172.16.88.1 5
+
+int Ethernet1-2
+switchport mode tr
+ex
+
+management ssh
+vrf management
+no shu
+
+end
+wr
+
+
+==========================CD2==========================
+=======================================================
+
+==========================Spin-30==========================
+conf t
+hostname Spin-30
+ip routing
+
+ip vrf management-2
+vlan 100
+name RED-OOB-GESTION
+
+int Vlan 100
+ip vrf forwarding management-2
+ip address 172.16.100.10 255.255.255.0
+no shu
+
+int range gi0/0 - 2
+switchport tr encapsulation dot1q
+switchport mode tr
+no shu
+
+ip route vrf management-2 0.0.0.0 0.0.0.0 172.16.100.1
+ip ssh version 2
+
+end
+wr
+
 ==========================leave-15==========================
 conf t
 hostname leave-15
 
-==========================leave-15==========================
+vlan 100
+vrf instance management-2
+ip routing vrf management-2
+
+int Vlan 100
+vrf management-2
+ip add 172.16.100.15/24
+
+ip route vrf management-2 0.0.0.0/0 172.16.100.1
+
+int Ethernet1
+switchport mode trunk
+
+interface Ethernet3
+switchport mode access
+switchport access vlan 100
+
+management ssh
+vrf management-2
+no shutdown
+
+end
+wr
+
+==========================leave-16==========================
 conf t
 hostname leave-16
+
+vlan 100
+vrf instance management-2
+ip routing vrf management-2
+
+int Vlan 100
+vrf management-2
+ip add 172.16.100.16/24
+
+ip route vrf management-2 0.0.0.0/0 172.16.100.1
+
+int Ethernet1
+switchport mode trunk
+
+management ssh
+vrf management-2
+no shutdown
+
+end
+wr
