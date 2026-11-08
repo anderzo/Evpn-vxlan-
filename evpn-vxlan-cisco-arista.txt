@@ -36,7 +36,7 @@ no shu
 int fa0/0.99
 encapsulation dot1Q 99
 ip vrf forwarding management
-ip add 172.16.99.1 255.255.255.0
+ip add 172.16.99.1 255.255.255.0 
 
 ////PEERING BGP//////
 
@@ -57,6 +57,28 @@ bgp log-neighbor-changes
 neighbor 10.0.1.1 remote-as 65000
 neighbor 10.0.12.2 remote-as 10002
 network 10.255.0.10 mask 255.255.255.255
+
+///// Underlay /////
+
+int fa0/0.10
+description TRANSITO-OSPF-CD1
+encapsulation dot1Q 10
+ip add 10.0.10.1 255.255.255.0
+
+router ospf 10
+router-id 10.255.0.10
+passive-interface default
+
+no passive-interface fa0/0.10
+network 10.0.10.0 0.0.0.255 area 0
+default-information originate always
+
+router bgp 10001
+network 10.255.3.10 mask 255.255.255.255
+network 10.255.3.11 mask 255.255.255.255
+network 10.255.3.12 mask 255.255.255.255
+network 10.255.3.13 mask 255.255.255.255
+network 10.255.3.20 mask 255.255.255.255
 
 end
 wr
@@ -91,11 +113,29 @@ router bgp 10002
 bgp router-id 10.255.0.20
 bgp log-neighbor-changes
 neighbor 10.0.2.1 remote-as 65000
-neighbor 10.0.12.1 remote-as 10002
+neighbor 10.0.12.1 remote-as 10001
 network 10.255.0.20 mask 255.255.255.255
 
-end
-wr
+///// UNDERLAY /////
+int fa0/0.20
+description TRANSITO-OSPF-CD1
+encapsulation dot1Q 20
+ip add 10.0.20.1 255.255.255.0
+
+router ospf 10
+router-id 10.255.0.20
+passive-interface default
+
+no passive-interface fa0/0.20
+network 10.0.20.0 0.0.0.255 area 0
+default-information originate always
+
+router bgp 10002
+network 10.255.3.10 mask 255.255.255.255
+network 10.255.3.11 mask 255.255.255.255
+network 10.255.3.12 mask 255.255.255.255
+network 10.255.3.13 mask 255.255.255.255
+network 10.255.3.20 mask 255.255.255.255
 
 end
 wr
@@ -127,8 +167,8 @@ int fa1/0
 ip add 10.0.3.1 255.255.255.252
 no shu
 
- end
- wr
+end
+wr
 
 ==========================Spin-10==========================
 conf t
@@ -171,6 +211,24 @@ track 1 ip sla 1 reachability
 ip route vrf management 0.0.0.0 0.0.0.0 172.16.99.1 track 1
 ip route vrf management 0.0.0.0 0.0.0.0 172.16.88.1 5
 ip ssh version 2
+
+/////UNDERLAY/////
+vlan10
+name TRANSITO-OSPF-CD1
+
+interface Loopback0
+ip address 10.255.3.10 255.255.255.255
+
+interface Vlan10
+ip address 10.0.10.2 255.255.255.0
+no shu
+
+router ospf 10
+router-id 10.255.3.10
+passive-interface default
+no passive-interface Vlan10
+network 10.0.10.0 0.0.0.255 area 0
+network 10.255.3.10 0.0.0.0 area 0
 
 end
 wr
@@ -218,6 +276,24 @@ ip route vrf management 0.0.0.0 0.0.0.0 172.16.88.1 track 1
 ip route vrf management 0.0.0.0 0.0.0.0 172.16.99.1 5
 ip ssh version 2
 
+/////UNDERLAY/////
+vlan20
+name TRANSITO-OSPF-CD1-2
+
+interface Loopback0
+ip address 10.255.3.20 255.255.255.255
+
+interface Vlan20
+ip address 10.0.20.2 255.255.255.0
+no shu
+
+router ospf 10
+router-id 10.255.3.20
+passive-interface default
+no passive-interface Vlan20
+network 10.0.20.0 0.0.0.255 area 0
+network 10.255.3.20 0.0.0.0 area 0
+
 end
 wr
 
@@ -254,6 +330,29 @@ management ssh
 vrf management
 no shu
 
+/////UNDERLAY/////
+ip routing
+vlan 10,20
+
+interface Loopback0
+ip address 10.255.3.11/32
+
+interface Vlan10
+ip address 10.0.10.11/24
+
+interface Vlan20
+ip address 10.0.20.11/24
+
+router ospf 10
+router-id 10.255.3.11
+passive-interface default
+
+no passive-interface Vlan10
+no passive-interface Vlan20
+network 10.0.10.0/24 area 0.0.0.0
+network 10.0.20.0/24 area 0.0.0.0
+network 10.255.3.11/32 area 0.0.0.0
+
 end
 wr
 
@@ -284,6 +383,29 @@ switchport mode tr
 management ssh
 vrf management
 no shu
+
+/////UNDERLAY/////
+ip routing
+vlan 10,20
+
+interface Loopback0
+ip address 10.255.3.12/32
+
+interface Vlan10
+ip address 10.0.10.12/24
+
+interface Vlan20
+ip address 10.0.20.12/24
+
+router ospf 10
+router-id 10.255.3.12
+passive-interface default
+
+no passive-interface Vlan10
+no passive-interface Vlan20
+network 10.0.10.0/24 area 0.0.0.0
+network 10.0.20.0/24 area 0.0.0.0
+network 10.255.3.12/32 area 0.0.0.0
 
 end
 wr
@@ -317,6 +439,29 @@ ex
 management ssh
 vrf management
 no shu
+
+/////UNDERLAY/////
+ip routing
+vlan 10,20
+
+interface Loopback0
+ip address 10.255.3.13/32
+
+interface Vlan10
+ip address 10.0.10.13/24
+
+interface Vlan20
+ip address 10.0.20.13/24
+
+router ospf 10
+router-id 10.255.3.13
+passive-interface default
+
+no passive-interface Vlan10
+no passive-interface Vlan20
+network 10.0.10.0/24 area 0.0.0.0
+network 10.0.20.0/24 area 0.0.0.0
+network 10.255.3.13/32 area 0.0.0.0
 
 end
 wr
@@ -355,8 +500,24 @@ bgp log-neighbor-changes
 neighbor 10.0.3.1 remote-as 65000
 network 10.255.0.30 mask 255.255.255.255
 
-end
-wr
+///// UNDERLAY /////
+int fa0/0.30
+description TRANSITO-OSPF-CD1
+encapsulation dot1Q 30
+ip add 10.0.30.1 255.255.255.0
+
+router ospf 10
+router-id 10.255.0.30
+passive-interface default
+
+no passive-interface fa0/0.30
+network 10.0.30.0 0.0.0.255 area 0
+default-information originate always
+
+router bgp 10003
+network 10.255.3.15 mask 255.255.255.255
+network 10.255.3.16 mask 255.255.255.255
+network 10.255.3.30 mask 255.255.255.255
 
 end
 wr
@@ -382,6 +543,24 @@ no shu
 
 ip route vrf management-2 0.0.0.0 0.0.0.0 172.16.100.1
 ip ssh version 2
+
+/////UNDERLAY/////
+vlan 30
+name TRANSITO-OSPF-CD2
+
+interface Loopback0
+ip address 10.255.3.30 255.255.255.255
+
+interface Vlan 30
+ip address 10.0.30.2 255.255.255.0
+no shu
+
+router ospf 10
+router-id 10.255.3.30
+passive-interface default
+no passive-interface Vlan 30
+network 10.0.30.0 0.0.0.255 area 0
+network 10.255.3.30 0.0.0.0 area 0
 
 end
 wr
@@ -411,6 +590,24 @@ management ssh
 vrf management-2
 no shutdown
 
+/////UNDERLAY/////
+ip routing
+vlan 30
+
+interface Loopback0
+ip address 10.255.3.15/32
+
+interface Vlan 30
+ip address 10.0.30.15/24
+
+router ospf 10
+router-id 10.255.3.15
+passive-interface default
+
+no passive-interface Vlan 30
+network 10.0.30.0/24 area 0.0.0.0
+network 10.255.3.15/32 area 0.0.0.0
+
 end
 wr
 
@@ -434,6 +631,24 @@ switchport mode trunk
 management ssh
 vrf management-2
 no shutdown
+
+/////UNDERLAY/////
+ip routing
+vlan 30
+
+interface Loopback0
+ip address 10.255.3.16/32
+
+interface Vlan 30
+ip address 10.0.30.16/24
+
+router ospf 10
+router-id 10.255.3.16
+passive-interface default
+
+no passive-interface Vlan 30
+network 10.0.30.0/24 area 0.0.0.0
+network 10.255.3.16/32 area 0.0.0.0
 
 end
 wr
