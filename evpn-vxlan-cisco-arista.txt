@@ -51,24 +51,6 @@ encapsulation dot1Q 88
 ip vrf forwarding management
 ip add 172.16.88.1 255.255.255.0
 
-==========================R-Border-30==========================
-conf t
-hostname R-Border-30
-ip routing
-
-ip vrf management-2
-int fa0/0
-no shu
-
-int fa0/0.100
-encapsulation dot1Q 100
-ip vrf forwarding management-2
-ip address 172.16.100.1 255.255.255.0
-no shu
-
-end
-wr
-
 ==========================Cisco-ISP==========================
 conf t
 hostname Cisco-ISP
@@ -268,6 +250,24 @@ wr
 ==========================CD2==========================
 =======================================================
 
+==========================R-Border-30==========================
+conf t
+hostname R-Border-30
+ip routing
+
+ip vrf management-2
+int fa0/0
+no shu
+
+int fa0/0.100
+encapsulation dot1Q 100
+ip vrf forwarding management-2
+ip address 172.16.100.1 255.255.255.0
+no shu
+
+end
+wr
+
 ==========================Spin-30==========================
 conf t
 hostname Spin-30
@@ -279,7 +279,7 @@ name RED-OOB-GESTION
 
 int Vlan 100
 ip vrf forwarding management-2
-ip address 172.16.100.10 255.255.255.0
+ip address 172.16.100.30 255.255.255.0
 no shu
 
 int range gi0/0 - 2
