@@ -213,22 +213,56 @@ ip route vrf management 0.0.0.0 0.0.0.0 172.16.88.1 5
 ip ssh version 2
 
 /////UNDERLAY/////
-vlan10
+vlan 10
 name TRANSITO-OSPF-CD1
 
 interface Loopback0
 ip address 10.255.3.10 255.255.255.255
 
-interface Vlan10
+interface Vlan 10
 ip address 10.0.10.2 255.255.255.0
 no shu
 
 router ospf 10
 router-id 10.255.3.10
 passive-interface default
-no passive-interface Vlan10
+no passive-interface Vlan 10
 network 10.0.10.0 0.0.0.255 area 0
 network 10.255.3.10 0.0.0.0 area 0
+
+/////route reflectors/////
+
+router bgp 65001
+bgp router-id 10.255.3.10
+bgp log-neighbor-changes
+no bgp default ipv4-unicast
+neighbor 10.255.3.11 remote-as 65001
+neighbor 10.255.3.11 update-source Loopback0
+neighbor 10.255.3.12 remote-as 65001
+neighbor 10.255.3.12 update-source Loopback0
+neighbor 10.255.3.13 remote-as 65001
+neighbor 10.255.3.13 update-source Loopback0
+neighbor 10.255.3.20 remote-as 65001
+neighbor 10.255.3.20 update-source Loopback0
+neighbor 10.255.3.30 remote-as 65001
+neighbor 10.255.3.30 update-source Loopback0
+address-family l2vpn evpn
+neighbor 10.255.3.11 activate
+neighbor 10.255.3.11 route-reflector-client
+neighbor 10.255.3.11 send-community extended
+neighbor 10.255.3.12 activate
+neighbor 10.255.3.12 route-reflector-client
+neighbor 10.255.3.12 send-community extended
+neighbor 10.255.3.13 activate
+neighbor 10.255.3.13 route-reflector-client
+neighbor 10.255.3.13 send-community extended
+neighbor 10.255.3.20 activate
+neighbor 10.255.3.20 send-community extended
+neighbor 10.255.3.30 activate
+neighbor 10.255.3.30 send-community extended
+exit-address-family
+
+ip route 10.255.3.30 255.255.255.255 10.0.10.1
 
 end
 wr
@@ -294,6 +328,37 @@ no passive-interface Vlan20
 network 10.0.20.0 0.0.0.255 area 0
 network 10.255.3.20 0.0.0.0 area 0
 
+/////route reflectors/////
+router bgp 65001
+bgp router-id 10.255.3.20
+bgp log-neighbor-changes
+no bgp default ipv4-unicast
+neighbor 10.255.3.11 remote-as 65001
+neighbor 10.255.3.11 update-source Loopback0
+neighbor 10.255.3.12 remote-as 65001
+neighbor 10.255.3.12 update-source Loopback0
+neighbor 10.255.3.13 remote-as 65001
+neighbor 10.255.3.13 update-source Loopback0
+neighbor 10.255.3.10 remote-as 65001
+neighbor 10.255.3.10 update-source Loopback0
+neighbor 10.255.3.30 remote-as 65001
+neighbor 10.255.3.30 update-source Loopback0
+address-family l2vpn evpn
+neighbor 10.255.3.11 activate
+neighbor 10.255.3.11 route-reflector-client
+neighbor 10.255.3.11 send-community extended
+neighbor 10.255.3.12 activate
+neighbor 10.255.3.12 route-reflector-client
+neighbor 10.255.3.12 send-community extended
+neighbor 10.255.3.13 activate
+neighbor 10.255.3.13 route-reflector-client
+neighbor 10.255.3.13 send-community extended
+neighbor 10.255.3.10 activate
+neighbor 10.255.3.10 send-community extended
+neighbor 10.255.3.30 activate
+neighbor 10.255.3.30 send-community extended
+exit-address-family
+
 end
 wr
 
@@ -320,11 +385,16 @@ ip route vrf management 0.0.0.0/0 172.16.99.1
 ip route vrf management 0.0.0.0/0 172.16.88.1 5
 
 int Ethernet1-2
-switchport mode tr
+switchport mode trunk
+switchport trunk allowed vlan 88,99,10,20
 
 int Ethernet3
 switchport mode access
 switchport access vlan 99
+
+interface Ethernet4
+switchport mode access
+switchport access vlan 50
 
 management ssh
 vrf management
@@ -352,6 +422,43 @@ no passive-interface Vlan20
 network 10.0.10.0/24 area 0.0.0.0
 network 10.0.20.0/24 area 0.0.0.0
 network 10.255.3.11/32 area 0.0.0.0
+
+/////route reflectors/////
+router bgp 65001
+router-id 10.255.3.11
+no bgp default ipv4-unicast
+neighbor RR peer group
+neighbor RR remote-as 65001
+neighbor RR update-source Loopback0
+neighbor RR send-community extended
+neighbor 10.255.3.10 peer group RR
+neighbor 10.255.3.20 peer group RR
+address-family evpn
+neighbor RR activate
+
+interface Ethernet4
+switchport mode access
+switchport access vlan 50
+
+///// VXLAN /////
+vlan 50
+name CONTABILIDAD
+vlan 60
+name TI
+interface Vxlan1
+vxlan source-interface Loopback0
+vxlan udp-port 4789
+vxlan vlan 50 vni 10050
+vxlan vlan 60 vni 10060
+router bgp 65001
+vlan 50
+rd auto
+route-target both 10050:10050
+redistribute learned
+vlan 60
+rd auto
+route-target both 10060:10060
+redistribute learned
 
 end
 wr
@@ -406,6 +513,39 @@ no passive-interface Vlan20
 network 10.0.10.0/24 area 0.0.0.0
 network 10.0.20.0/24 area 0.0.0.0
 network 10.255.3.12/32 area 0.0.0.0
+
+/////route reflectors/////
+router bgp 65001
+router-id 10.255.3.12
+no bgp default ipv4-unicast
+neighbor RR peer group
+neighbor RR remote-as 65001
+neighbor RR update-source Loopback0
+neighbor RR send-community extended
+neighbor 10.255.3.10 peer group RR
+neighbor 10.255.3.20 peer group RR
+address-family evpn
+neighbor RR activate
+
+///// VXLAN /////
+vlan 50
+name CONTABILIDAD
+vlan 60
+name TI
+interface Vxlan1
+vxlan source-interface Loopback0
+vxlan udp-port 4789
+vxlan vlan 50 vni 10050
+vxlan vlan 60 vni 10060
+router bgp 65001
+vlan 50
+rd auto
+route-target both 10050:10050
+redistribute learned
+vlan 60
+rd auto
+route-target both 10060:10060
+redistribute learned
 
 end
 wr
@@ -462,6 +602,39 @@ no passive-interface Vlan20
 network 10.0.10.0/24 area 0.0.0.0
 network 10.0.20.0/24 area 0.0.0.0
 network 10.255.3.13/32 area 0.0.0.0
+
+/////route reflectors/////
+router bgp 65001
+router-id 10.255.3.13
+no bgp default ipv4-unicast
+neighbor RR peer group
+neighbor RR remote-as 65001
+neighbor RR update-source Loopback0
+neighbor RR send-community extended
+neighbor 10.255.3.10 peer group RR
+neighbor 10.255.3.20 peer group RR
+address-family evpn
+neighbor RR activate
+
+///// VXLAN /////
+vlan 50
+name CONTABILIDAD
+vlan 60
+name TI
+interface Vxlan1
+vxlan source-interface Loopback0
+vxlan udp-port 4789
+vxlan vlan 50 vni 10050
+vxlan vlan 60 vni 10060
+router bgp 65001
+vlan 50
+rd auto
+route-target both 10050:10050
+redistribute learned
+vlan 60
+rd auto
+route-target both 10060:10060
+redistribute learned
 
 end
 wr
@@ -562,6 +735,32 @@ no passive-interface Vlan 30
 network 10.0.30.0 0.0.0.255 area 0
 network 10.255.3.30 0.0.0.0 area 0
 
+/////route reflectors/////
+router bgp 65001
+bgp router-id 10.255.3.30
+bgp log-neighbor-changes
+no bgp default ipv4-unicast
+neighbor 10.255.3.15 remote-as 65001
+neighbor 10.255.3.15 update-source Loopback0
+neighbor 10.255.3.16 remote-as 65001
+neighbor 10.255.3.16 update-source Loopback0
+neighbor 10.255.3.10 remote-as 65001
+neighbor 10.255.3.10 update-source Loopback0
+neighbor 10.255.3.20 remote-as 65001
+neighbor 10.255.3.20 update-source Loopback0
+address-family l2vpn evpn
+neighbor 10.255.3.15 activate
+neighbor 10.255.3.15 route-reflector-client
+neighbor 10.255.3.15 send-community extended
+neighbor 10.255.3.16 activate
+neighbor 10.255.3.16 route-reflector-client
+neighbor 10.255.3.16 send-community extended
+neighbor 10.255.3.10 activate
+neighbor 10.255.3.10 send-community extended
+neighbor 10.255.3.20 activate
+neighbor 10.255.3.20 send-community extended
+exit-address-family
+
 end
 wr
 
@@ -581,8 +780,13 @@ ip route vrf management-2 0.0.0.0/0 172.16.100.1
 
 int Ethernet1
 switchport mode trunk
+switchport trunk allowed vlan 100,30
 
 interface Ethernet3
+switchport mode access
+switchport access vlan 50
+
+interface Ethernet4
 switchport mode access
 switchport access vlan 100
 
@@ -607,6 +811,38 @@ passive-interface default
 no passive-interface Vlan 30
 network 10.0.30.0/24 area 0.0.0.0
 network 10.255.3.15/32 area 0.0.0.0
+
+/////route reflectors/////
+router bgp 65001
+router-id 10.255.3.15
+no bgp default ipv4-unicast
+neighbor RR peer group
+neighbor RR remote-as 65001
+neighbor RR update-source Loopback0
+neighbor RR send-community extended
+neighbor 10.255.3.30 peer group RR
+address-family evpn
+neighbor RR activate
+
+///// VXLAN /////
+vlan 50
+name CONTABILIDAD
+vlan 60
+name TI
+interface Vxlan1
+vxlan source-interface Loopback0
+vxlan udp-port 4789
+vxlan vlan 50 vni 10050
+vxlan vlan 60 vni 10060
+router bgp 65001
+vlan 50
+rd auto
+route-target both 10050:10050
+redistribute learned
+vlan 60
+rd auto
+route-target both 10060:10060
+redistribute learned
 
 end
 wr
@@ -650,5 +886,56 @@ no passive-interface Vlan 30
 network 10.0.30.0/24 area 0.0.0.0
 network 10.255.3.16/32 area 0.0.0.0
 
+/////route reflectors/////
+router bgp 65001
+router-id 10.255.3.16
+no bgp default ipv4-unicast
+neighbor RR peer group
+neighbor RR remote-as 65001
+neighbor RR update-source Loopback0
+neighbor RR send-community extended
+neighbor 10.255.3.30 peer group RR
+address-family evpn
+neighbor RR activate
+
+///// VXLAN /////
+vlan 50
+name CONTABILIDAD
+vlan 60
+name TI
+interface Vxlan1
+vxlan source-interface Loopback0
+vxlan udp-port 4789
+vxlan vlan 50 vni 10050
+vxlan vlan 60 vni 10060
+router bgp 65001
+vlan 50
+rd auto
+route-target both 10050:10050
+redistribute learned
+vlan 60
+rd auto
+route-target both 10060:10060
+redistribute learned
+
 end
 wr
+
+===================PC===================
+
+PC5 CD-2
+ip 192.168.50.5/24
+
+PC3 CD-1
+ip 192.168.50.3/24
+
+desde PC5
+ping 192.168.50.3
+
+show vxlan vtep
+show bgp evpn summary
+show vxlan address-table
+
+-----ver tabla de macs aprendidas---
+show vxlan address-table
+show bgp evpn route-type mac-ip
