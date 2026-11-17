@@ -167,6 +167,17 @@ int fa1/0
 ip add 10.0.3.1 255.255.255.252
 no shu
 
+ip vrf MANAGEMENT
+ex
+int fa2/0
+no shu
+ex
+int fa2/0.99
+encapsulation dot1Q 99
+ip vrf forwarding MANAGEMENT
+ip add 172.16.99.254 255.255.255.0
+no shu
+
 end
 wr
 
@@ -387,6 +398,7 @@ ip route vrf management 0.0.0.0/0 172.16.88.1 5
 int Ethernet1-2
 switchport mode trunk
 switchport trunk allowed vlan 88,99,10,20
+mtu 9000
 
 int Ethernet3
 switchport mode access
@@ -460,6 +472,28 @@ rd auto
 route-target both 10060:10060
 redistribute learned
 
+/////vrf ruteo /////
+ip virtual-router mac-address 00:1c:73:00:00:99
+vrf instance TENANT-A
+ip routing vrf TENANT-A
+
+interface Vlan50
+vrf TENANT-A
+ip address virtual 192.168.50.254/24
+interface Vlan60
+vrf TENANT-A
+ip address virtual 192.168.60.254/24
+
+interface Vxlan1
+vxlan vrf TENANT-A vni 50000
+
+router bgp 65001
+vrf TENANT-A
+rd auto
+route-target import evpn 1:50000
+route-target export evpn 1:50000
+redistribute connected
+
 end
 wr
 
@@ -486,6 +520,8 @@ ip route vrf management 0.0.0.0/0 172.16.88.1 5
 
 int Ethernet1-2
 switchport mode tr
+switchport trunk allowed vlan 88,99,10,20
+mtu 9000
 
 management ssh
 vrf management
@@ -574,6 +610,8 @@ ip route vrf management 0.0.0.0/0 172.16.88.1 5
 
 int Ethernet1-2
 switchport mode tr
+switchport trunk allowed vlan 88,99,10,20
+mtu 9000
 ex
 
 management ssh
@@ -626,15 +664,44 @@ vxlan source-interface Loopback0
 vxlan udp-port 4789
 vxlan vlan 50 vni 10050
 vxlan vlan 60 vni 10060
+interface Ethernet3
+switchport mode access
+switchport access vlan 50
+interface Ethernet1-2
+switchport trunk allowed vlan 10,20,88,99
 router bgp 65001
 vlan 50
 rd auto
-route-target both 10050:10050
+route-target both 50:10051
 redistribute learned
 vlan 60
 rd auto
-route-target both 10060:10060
+route-target both 60:10061
 redistribute learned
+
+/////vrf ruteo/////
+
+ip virtual-router mac-address 00:1c:73:00:00:99
+vrf instance TENANT-B
+ip routing vrf TENANT-B
+
+interface Vlan50
+vrf TENANT-B
+ip address virtual 192.168.50.254/24
+interface Vlan60
+vrf TENANT-B
+ip address virtual 192.168.60.254/24
+
+interface Vxlan1
+vxlan vrf TENANT-B vni 50001
+
+router bgp 65001
+vrf TENANT-B
+rd auto
+route-target import evpn 1:50001
+route-target export evpn 1:50001
+redistribute connected
+
 
 end
 wr
@@ -781,6 +848,7 @@ ip route vrf management-2 0.0.0.0/0 172.16.100.1
 int Ethernet1
 switchport mode trunk
 switchport trunk allowed vlan 100,30
+mtu 9000
 
 interface Ethernet3
 switchport mode access
@@ -844,6 +912,28 @@ rd auto
 route-target both 10060:10060
 redistribute learned
 
+/////vrf ruteo /////
+ip virtual-router mac-address 00:1c:73:00:00:99
+vrf instance TENANT-A
+ip routing vrf TENANT-A
+
+interface Vlan50
+vrf TENANT-A
+ip address virtual 192.168.50.254/24
+interface Vlan60
+vrf TENANT-A
+ip address virtual 192.168.60.254/24
+
+interface Vxlan1
+vxlan vrf TENANT-A vni 50000
+
+router bgp 65001
+vrf TENANT-A
+rd auto
+route-target import evpn 1:50000
+route-target export evpn 1:50000
+redistribute connected
+
 end
 wr
 
@@ -863,6 +953,8 @@ ip route vrf management-2 0.0.0.0/0 172.16.100.1
 
 int Ethernet1
 switchport mode trunk
+switchport trunk allowed vlan 100,30
+mtu 9000
 
 management ssh
 vrf management-2
@@ -906,19 +998,47 @@ name TI
 interface Vxlan1
 vxlan source-interface Loopback0
 vxlan udp-port 4789
-vxlan vlan 50 vni 10050
-vxlan vlan 60 vni 10060
+vxlan vlan 50 vni 10051
+vxlan vlan 60 vni 10061
+interface Ethernet3
+switchport mode access
+switchport access vlan 50
+interface Ethernet1-2
+switchport trunk allowed vlan 100,30
 router bgp 65001
 vlan 50
 rd auto
-route-target both 10050:10050
+route-target both 50:10051
 redistribute learned
 vlan 60
 rd auto
-route-target both 10060:10060
+route-target both 60:10061
 redistribute learned
 
-end
+/////vrf ruteo/////
+
+ip virtual-router mac-address 00:1c:73:00:00:99
+vrf instance TENANT-B
+ip routing vrf TENANT-B
+
+interface Vlan50
+vrf TENANT-B
+ip address virtual 192.168.50.254/24
+interface Vlan60
+vrf TENANT-B
+ip address virtual 192.168.60.254/24
+
+interface Vxlan1
+vxlan vrf TENANT-B vni 50001
+
+router bgp 65001
+vrf TENANT-B
+rd auto
+route-target import evpn 1:50001
+route-target export evpn 1:50001
+redistribute connected
+
+end 
 wr
 
 ===================PC===================
@@ -939,3 +1059,7 @@ show vxlan address-table
 -----ver tabla de macs aprendidas---
 show vxlan address-table
 show bgp evpn route-type mac-ip
+
+///// 
+ip 192.168.50.3/24 192.168.50.254
+ip 192.168.60.5/24 192.168.60.254
